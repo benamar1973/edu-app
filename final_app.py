@@ -1,145 +1,166 @@
 import streamlit as st
 import requests
 from urllib.parse import quote
-import time
+import webbrowser
+import streamlit.components.v1 as components
 
 # إعدادات الصفحة
 st.set_page_config(page_title="منصة تعليمية ذكية", page_icon="📚", layout="wide")
 
-# تنسيق CSS احترافي
+# تنسيق CSS احترافي (بدون أي روابط خارجية)
 st.markdown("""
 <style>
-    /* خلفية متدرجة أنيقة */
+    /* خلفية عصرية متدرجة */
     .stApp {
-        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        background: linear-gradient(145deg, #0B1120 0%, #19233C 100%);
     }
     
     /* تنسيق البطاقات */
     .custom-card {
-        background: rgba(255,255,255,0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(12px);
+        border-radius: 24px;
         padding: 20px;
         margin: 15px 0;
-        border: 1px solid rgba(255,255,255,0.2);
-        transition: transform 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .custom-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-4px);
+        border-color: rgba(59,130,246,0.5);
+        box-shadow: 0 20px 30px -12px rgba(0,0,0,0.3);
     }
     
-    /* تنسيق الأزرار */
+    /* أزرار أنيقة */
     .stButton > button {
-        background: linear-gradient(90deg, #00c6ff, #0072ff);
+        background: linear-gradient(90deg, #3B82F6, #2563EB);
         color: white;
         border: none;
-        border-radius: 30px;
-        padding: 10px 25px;
-        font-weight: bold;
-        transition: all 0.3s ease;
+        border-radius: 40px;
+        padding: 12px 24px;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        width: 100%;
     }
     .stButton > button:hover {
         transform: scale(1.02);
-        box-shadow: 0 5px 15px rgba(0,114,255,0.4);
+        box-shadow: 0 8px 20px rgba(59,130,246,0.4);
+        background: linear-gradient(90deg, #2563EB, #1D4ED8);
     }
     
-    /* تنسيق حقل الإدخال */
+    /* حقل الإدخال */
     .stTextInput > div > div > input {
-        border-radius: 30px;
-        border: 1px solid rgba(255,255,255,0.3);
-        background: rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 48px;
+        padding: 12px 20px;
         color: white;
-        padding: 10px 20px;
+        font-size: 16px;
+        transition: all 0.2s;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
     }
     
-    /* عنوان الصفحة */
+    /* عنوان رئيسي */
     .main-title {
         text-align: center;
-        font-size: 3rem;
-        background: linear-gradient(90deg, #00c6ff, #0072ff);
+        font-size: 2.8rem;
+        font-weight: 700;
+        background: linear-gradient(120deg, #60A5FA, #A78BFA);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 20px;
+        margin-bottom: 1rem;
     }
     
-    /* تنسيق الدروس المحفوظة */
-    .saved-item {
-        background: rgba(255,255,255,0.1);
-        border-radius: 15px;
-        padding: 10px 15px;
-        margin: 5px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    /* تذييل مخفي */
+    footer {
+        visibility: hidden;
+    }
+    .reportview-container .main footer {
+        display: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# إخفاء الرابط التلقائي
+st.markdown("""
+<script>
+    // إخفاء عنصر footer الذي يحوي روابط GitHub
+    var style = document.createElement('style');
+    style.innerHTML = 'footer {display: none !important;} .viewerBadge_container__r5tak {display: none !important;}';
+    document.head.appendChild(style);
+</script>
+""", unsafe_allow_html=True)
+
 # العنوان
-st.markdown('<p class="main-title">📚 منصتي التعليمية الذكية</p>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
 
-# العمودان: الإدخال والنتائج
-col_left, col_right = st.columns([2, 1])
+# حقل الإدخال
+topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس... (مثال: فيزياء الكم)", label_visibility="collapsed")
 
-with col_left:
-    st.markdown("### 🔍 ابحث عن درسك")
-    topic = st.text_input("", placeholder="مثال: برمجة بايثون - دوال", label_visibility="collapsed")
+# أزرار
+col1, col2 = st.columns(2)
+with col1:
+    text_btn = st.button("📖 درس نصي")
+with col2:
+    video_btn = st.button("🎥 فيديو تعليمي")
+
+# دوال البحث والفتح المباشر
+def search_and_open(query, mode):
+    if not query.strip():
+        st.warning("⚠️ الرجاء كتابة الدرس أولاً")
+        return
     
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        search_text = st.button("📖 درس نصي", use_container_width=True)
-    with col_btn2:
-        search_video = st.button("🎥 فيديو تعليمي", use_container_width=True)
+    with st.spinner(f"🔍 جاري البحث عن {mode} ..."):
+        if mode == "نصي":
+            encoded = quote(query + " شرح درس تعليمي")
+            url = f"https://www.google.com/search?q={encoded}"
+        else:
+            encoded = quote(query + " شرح تعليمي")
+            url = f"https://www.youtube.com/results?search_query={encoded}"
+        
+        # حفظ في الجلسة
+        if "history" not in st.session_state:
+            st.session_state.history = []
+        st.session_state.history.insert(0, {"topic": query, "type": mode, "url": url})
+        st.session_state.history = st.session_state.history[:8]
+        
+        # فتح الرابط تلقائياً عبر JavaScript
+        components.html(f"""
+            <script>
+                window.open("{url}", "_blank");
+            </script>
+        """, height=0)
+        
+        st.success(f"✅ تم فتح {mode} مباشرة بنجاح")
 
-    # دالة البحث
-    def search_and_open(query, search_type):
-        with st.spinner("🔍 جاري البحث عن أفضل محتوى..."):
-            time.sleep(0.5)  # محاكاة بحث حقيقية
-            if search_type == "text":
-                encoded = quote(query + " شرح درس تعليمي")
-                link = f"https://www.google.com/search?q={encoded}"
-            else:
-                encoded = quote(query + " شرح تعليمي")
-                link = f"https://www.youtube.com/results?search_query={encoded}"
-            
-            # حفظ الدرس في الجلسة
-            if "history" not in st.session_state:
-                st.session_state.history = []
-            st.session_state.history.insert(0, {"topic": query, "type": search_type, "link": link})
-            if len(st.session_state.history) > 10:
-                st.session_state.history.pop()
-            
-            # فتح الرابط تلقائياً
-            st.markdown(f'<script>window.open("{link}", "_blank");</script>', unsafe_allow_html=True)
-            st.success(f"✅ تم فتح الدرس {search_type} بنجاح")
-            return link
+# تنفيذ البحث
+if text_btn:
+    search_and_open(topic, "نصي")
+if video_btn:
+    search_and_open(topic, "فيديو")
 
-    if search_text and topic:
-        link = search_and_open(topic, "نصي")
-    elif search_video and topic:
-        link = search_and_open(topic, "فيديو")
-    elif (search_text or search_video) and not topic:
-        st.warning("⚠️ الرجاء كتابة اسم الدرس أولاً")
+# عرض آخر درس
+if "history" in st.session_state and st.session_state.history:
+    last = st.session_state.history[0]
+    st.info(f"📌 آخر درس: **{last['topic']}** ({last['type']})")
 
-    # عرض آخر درس تم فتحه
-    if "history" in st.session_state and st.session_state.history:
-        last = st.session_state.history[0]
-        st.info(f"📌 آخر درس: **{last['topic']}** ({last['type']})")
-
-with col_right:
-    st.markdown("### ⭐ دروسي المحفوظة")
-    if "history" in st.session_state and st.session_state.history:
-        for i, item in enumerate(st.session_state.history):
-            col_a, col_b = st.columns([4, 1])
-            with col_a:
-                st.markdown(f"📘 {item['topic'][:30]}...")
-            with col_b:
-                if st.button("🗑️", key=f"del_{i}"):
-                    st.session_state.history.pop(i)
-                    st.rerun()
-    else:
-        st.info("💡 لا توجد دروس محفوظة. ابحث عن درس وسيظهر هنا.")
-
-# تذييل أنيق
+# منطقة الدروس المحفوظة
 st.markdown("---")
-st.markdown("<p style='text-align:center; color:rgba(255,255,255,0.6);'>✨ منصة تعليمية ذكية - ابحث وتعلم واحفظ دروسك</p>", unsafe_allow_html=True)
+st.markdown("### ⭐ دروسي المحفوظة")
+
+if "history" in st.session_state and st.session_state.history:
+    for idx, item in enumerate(st.session_state.history):
+        with st.container():
+            col_a, col_b = st.columns([5, 1])
+            with col_a:
+                st.markdown(f"📘 **{item['topic'][:50]}** ({item['type']})")
+            with col_b:
+                if st.button("🗑️ حذف", key=f"del_{idx}"):
+                    st.session_state.history.pop(idx)
+                    st.rerun()
+else:
+    st.caption("💡 لا توجد دروس محفوظة. ابحث عن درس وسيظهر هنا.")
