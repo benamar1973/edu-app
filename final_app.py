@@ -4,9 +4,9 @@ import requests
 import streamlit.components.v1 as components
 import datetime
 
-# ================== مفاتيح API الخاصة بك ==================
-YOUTUBE_API_KEY = "AlzaSyB1W6iJYh3S9jtBYZr75GOI9mOYBwc1ZE"
-CSE_API_KEY = "AlzaSyB1W6iJYh3S9jtBYZr75GOI9mOYBwc1ZE"  # نفس المفتاح
+# ================== مفاتيح API الصحيحة ==================
+YOUTUBE_API_KEY = "AIzaSyBTWi6iJYh3S9jtBYZr75GOi9mOYBwc1ZE"
+CSE_API_KEY = "AIzaSyBTWi6iJYh3S9jtBYZr75GOi9mOYBwc1ZE"  # نفس المفتاح
 CSE_ID = "017274155183416962991:zm4t6n8qj6m"
 
 # إعدادات الصفحة
@@ -138,8 +138,10 @@ def search_youtube_video(query):
         if "items" in data and len(data["items"]) > 0:
             video_id = data["items"][0]["id"]["videoId"]
             return f"https://www.youtube.com/watch?v={video_id}"
-    except:
-        pass
+        else:
+            st.error(f"❌ لم يتم العثور على فيديو: {data}")
+    except Exception as e:
+        st.error(f"❌ خطأ في الاتصال: {str(e)}")
     return None
 
 def search_article(query):
@@ -155,8 +157,10 @@ def search_article(query):
         data = response.json()
         if "items" in data and len(data["items"]) > 0:
             return data["items"][0]["link"]
-    except:
-        pass
+        else:
+            st.error(f"❌ لم يتم العثور على مقال: {data}")
+    except Exception as e:
+        st.error(f"❌ خطأ في الاتصال: {str(e)}")
     return None
 
 # الأزرار
@@ -176,8 +180,6 @@ with col1:
                         <a href="{link}" target="_blank">🔗 اضغط لفتح المقال مباشرة</a>
                     </div>
                     """, unsafe_allow_html=True)
-                else:
-                    st.error("❌ لم يتم العثور على مقال. حاول مرة أخرى.")
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
 
@@ -196,8 +198,6 @@ with col2:
                         <a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو مباشرة</a>
                     </div>
                     """, unsafe_allow_html=True)
-                else:
-                    st.error("❌ لم يتم العثور على فيديو. حاول مرة أخرى.")
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
 
