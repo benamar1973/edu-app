@@ -4,12 +4,10 @@ import requests
 import streamlit.components.v1 as components
 import datetime
 
-# ================== مفاتيح API الصحيحة ==================
-YOUTUBE_API_KEY = "AIzaSyBTWi6iJYh3S9jtBYZr75GOi9mOYBwc1ZE"
-CSE_API_KEY = "AIzaSyBTWi6iJYh3S9jtBYZr75GOi9mOYBwc1ZE"  # نفس المفتاح
-CSE_ID = "017274155183416962991:zm4t6n8qj6m"
+# قراءة المفتاح من الإعدادات السرية (آمن)
+YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 
-# إعدادات الصفحة
+# باقي الكود كما هو...
 st.set_page_config(page_title="منصة تعليمية ذكية", page_icon="📚", layout="wide")
 
 # خلفية علمية
@@ -20,9 +18,7 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
     
-    * {{
-        font-family: 'Tajawal', sans-serif;
-    }}
+    * {{ font-family: 'Tajawal', sans-serif; }}
     
     header, footer, .st-emotion-cache-1v0mbdj, [data-testid="stHeader"], [data-testid="stFooter"] {{
         display: none !important;
@@ -112,13 +108,39 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
+# إخفاء العناصر السفلية
+components.html("""
+<script>
+    function removeFooter() {
+        const elements = ['footer', '.viewerBadge_container__r5tak', '[data-testid="stFooter"]'];
+        elements.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => el.remove());
+        });
+    }
+    setInterval(removeFooter, 500);
+    window.addEventListener('load', removeFooter);
+</script>
+""", height=0)
+
 # المحتوى
 st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
 st.markdown('<div class="slogan">العلم نور، والإصرار طريق النجاح</div>', unsafe_allow_html=True)
 
-topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس... (مثال: فيزياء الكم)", label_visibility="collapsed")
+# حقل الإدخال + زر مسح
+if "search_topic" not in st.session_state:
+    st.session_state.search_topic = ""
 
-# تهيئة session state
+col_input, col_clear = st.columns([4, 1])
+with col_input:
+    topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس...", label_visibility="collapsed", key="search_input", value=st.session_state.search_topic)
+    st.session_state.search_topic = topic
+
+with col_clear:
+    if st.button("🗑️ مسح", key="clear_btn", use_container_width=True):
+        st.session_state.search_topic = ""
+        st.session_state.pop("search_input", None)
+        st.rerun()
+
 if 'history' not in st.session_state:
     st.session_state.history = []
 
@@ -138,38 +160,20 @@ def search_youtube_video(query):
         if "items" in data and len(data["items"]) > 0:
             video_id = data["items"][0]["id"]["videoId"]
             return f"https://www.youtube.com/watch?v={video_id}"
-        else:
-            st.error(f"❌ لم يتم العثور على فيديو: {data}")
-    except Exception as e:
-        st.error(f"❌ خطأ في الاتصال: {str(e)}")
+    except:
+        pass
     return None
 
-def search_article(query):
-    url = "https://www.googleapis.com/customsearch/v1"
-    params = {
-        "key": CSE_API_KEY,
-        "cx": CSE_ID,
-        "q": query + " شرح درس تعليمي",
-        "num": 1
-    }
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-        if "items" in data and len(data["items"]) > 0:
-            return data["items"][0]["link"]
-        else:
-            st.error(f"❌ لم يتم العثور على مقال: {data}")
-    except Exception as e:
-        st.error(f"❌ خطأ في الاتصال: {str(e)}")
-    return None
+def search_text_google(query):
+    return f"https://www.google.com/search?q={quote(query + ' شرح درس تعليمي')}"
 
 # الأزرار
 col1, col2 = st.columns(2)
 with col1:
     if st.button("📖 درس نصي", use_container_width=True):
         if topic:
-            with st.spinner("🔍 جاري البحث عن أفضل مقال..."):
-                link = search_article(topic)
+            with st.spinner("🔍 جاري البحث..."):
+                link = search_text_google(topic)
                 if link:
                     if topic not in st.session_state.history:
                         st.session_state.history.insert(0, topic)
@@ -177,7 +181,7 @@ with col1:
                     st.markdown(f"""
                     <div class="result-box">
                         📖 <strong>نتيجة البحث:</strong><br>
-                        <a href="{link}" target="_blank">🔗 اضغط لفتح المقال مباشرة</a>
+                        <a href="{link}" target="_blank">🔗 اضغط لفتح نتائج البحث</a>
                     </div>
                     """, unsafe_allow_html=True)
         else:
@@ -186,7 +190,7 @@ with col1:
 with col2:
     if st.button("🎥 فيديو تعليمي", use_container_width=True):
         if topic:
-            with st.spinner("🔍 جاري البحث عن أفضل فيديو..."):
+            with st.spinner("🔍 جاري البحث..."):
                 link = search_youtube_video(topic)
                 if link:
                     if topic not in st.session_state.history:
@@ -198,22 +202,22 @@ with col2:
                         <a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو مباشرة</a>
                     </div>
                     """, unsafe_allow_html=True)
+                else:
+                    st.error("❌ لم يتم العثور على فيديو.")
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
 
-# آخر درس
 if st.session_state.history:
-    st.info(f"📌 آخر درس بحثت عنه: **{st.session_state.history[0]}**")
+    st.info(f"📌 آخر درس: **{st.session_state.history[0]}**")
 
-# الدروس المحفوظة
 st.markdown('<div class="saved-lessons"><h3>⭐ دروسي المحفوظة</h3>', unsafe_allow_html=True)
 
 if st.session_state.history:
-    if st.button("📥 تحميل الدروس المحفوظة (ملف txt)"):
+    if st.button("📥 تحميل الدروس"):
         file_content = "دروسي المحفوظة\n" + "="*30 + "\n"
         for i, item in enumerate(st.session_state.history, 1):
             file_content += f"{i}. {item}\n"
-        st.download_button("✅ انقر لتحميل الملف", file_content, f"دروسي_{datetime.datetime.now().strftime('%Y%m%d')}.txt", "text/plain")
+        st.download_button("✅ تحميل", file_content, f"دروسي_{datetime.datetime.now().strftime('%Y%m%d')}.txt", "text/plain")
     
     for idx, item in enumerate(st.session_state.history):
         col_a, col_b = st.columns([5, 1])
@@ -224,6 +228,6 @@ if st.session_state.history:
                 st.session_state.history.pop(idx)
                 st.rerun()
 else:
-    st.markdown('<div class="lesson-item">💡 لا توجد دروس محفوظة. ابحث عن درس وسيظهر هنا.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="lesson-item">💡 لا توجد دروس محفوظة.</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
