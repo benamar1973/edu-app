@@ -1,12 +1,21 @@
 import streamlit as st
 from urllib.parse import quote
+import requests
+import streamlit.components.v1 as components
 import datetime
 
-st.set_page_config(page_title="منصة تعليمية", page_icon="📚", layout="wide")
+# ================== مفاتيح API الخاصة بك ==================
+YOUTUBE_API_KEY = "AlzaSyB1W6iJYh3S9jtBYZr75GOI9mOYBwc1ZE"
+CSE_API_KEY = "AlzaSyB1W6iJYh3S9jtBYZr75GOI9mOYBwc1ZE"  # نفس المفتاح
+CSE_ID = "017274155183416962991:zm4t6n8qj6m"
 
+# إعدادات الصفحة
+st.set_page_config(page_title="منصة تعليمية ذكية", page_icon="📚", layout="wide")
+
+# خلفية علمية
 bg_url = "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format"
 
-# تنسيق شامل + إخفاء header
+# التنسيقات
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
@@ -15,17 +24,8 @@ st.markdown(f"""
         font-family: 'Tajawal', sans-serif;
     }}
     
-    /* إخفاء header و footer وكل العناصر العلوية */
-    header, footer, .st-emotion-cache-1v0mbdj, .st-emotion-cache-16txtl3,
-    .st-emotion-cache-1y4p8pa, .st-emotion-cache-1r6slb0, .viewerBadge_container__r5tak,
-    [data-testid="stHeader"], [data-testid="stFooter"], .stApp header,
-    .st-emotion-cache-12fm0u7, .st-emotion-cache-1w1c4f6 {{
+    header, footer, .st-emotion-cache-1v0mbdj, [data-testid="stHeader"], [data-testid="stFooter"] {{
         display: none !important;
-    }}
-    
-    /* إخفاء المساحة الفارغة العلوية */
-    .main .block-container {{
-        padding-top: 2rem;
     }}
     
     .stApp {{
@@ -75,21 +75,18 @@ st.markdown(f"""
     }}
     
     .result-box {{
-        background: rgba(0,0,0,0.7);
+        background: rgba(0,0,0,0.75);
         border-radius: 15px;
         padding: 15px;
         margin: 15px 0;
         text-align: center;
+        border: 1px solid rgba(255,255,255,0.2);
     }}
     
     .result-box a {{
         color: #FFD166;
         font-size: 18px;
         text-decoration: none;
-    }}
-    
-    .result-box a:hover {{
-        text-decoration: underline;
     }}
     
     .saved-lessons {{
@@ -111,19 +108,6 @@ st.markdown(f"""
         margin: 5px 0;
         border-radius: 10px;
         color: white;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }}
-    
-    .delete-btn {{
-        background: #dc3545;
-        color: white;
-        border: none;
-        border-radius: 20px;
-        padding: 2px 12px;
-        cursor: pointer;
-        font-size: 12px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -137,74 +121,100 @@ topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس
 # تهيئة session state
 if 'history' not in st.session_state:
     st.session_state.history = []
-if 'text_link' not in st.session_state:
-    st.session_state.text_link = ""
-if 'video_link' not in st.session_state:
-    st.session_state.video_link = ""
 
+# دوال البحث
+def search_youtube_video(query):
+    url = "https://www.googleapis.com/youtube/v3/search"
+    params = {
+        "part": "snippet",
+        "q": query + " شرح تعليمي",
+        "type": "video",
+        "maxResults": 1,
+        "key": YOUTUBE_API_KEY
+    }
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+        if "items" in data and len(data["items"]) > 0:
+            video_id = data["items"][0]["id"]["videoId"]
+            return f"https://www.youtube.com/watch?v={video_id}"
+    except:
+        pass
+    return None
+
+def search_article(query):
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": CSE_API_KEY,
+        "cx": CSE_ID,
+        "q": query + " شرح درس تعليمي",
+        "num": 1
+    }
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+        if "items" in data and len(data["items"]) > 0:
+            return data["items"][0]["link"]
+    except:
+        pass
+    return None
+
+# الأزرار
 col1, col2 = st.columns(2)
 with col1:
     if st.button("📖 درس نصي", use_container_width=True):
         if topic:
-            st.session_state.text_link = f"https://www.google.com/search?q={quote(topic + ' شرح')}"
-            st.session_state.video_link = ""
-            if topic not in st.session_state.history:
-                st.session_state.history.insert(0, topic)
-                st.session_state.history = st.session_state.history[:10]
+            with st.spinner("🔍 جاري البحث عن أفضل مقال..."):
+                link = search_article(topic)
+                if link:
+                    if topic not in st.session_state.history:
+                        st.session_state.history.insert(0, topic)
+                        st.session_state.history = st.session_state.history[:10]
+                    st.markdown(f"""
+                    <div class="result-box">
+                        📖 <strong>نتيجة البحث:</strong><br>
+                        <a href="{link}" target="_blank">🔗 اضغط لفتح المقال مباشرة</a>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.error("❌ لم يتم العثور على مقال. حاول مرة أخرى.")
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
 
 with col2:
     if st.button("🎥 فيديو تعليمي", use_container_width=True):
         if topic:
-            st.session_state.video_link = f"https://www.youtube.com/results?search_query={quote(topic + ' شرح')}"
-            st.session_state.text_link = ""
-            if topic not in st.session_state.history:
-                st.session_state.history.insert(0, topic)
-                st.session_state.history = st.session_state.history[:10]
+            with st.spinner("🔍 جاري البحث عن أفضل فيديو..."):
+                link = search_youtube_video(topic)
+                if link:
+                    if topic not in st.session_state.history:
+                        st.session_state.history.insert(0, topic)
+                        st.session_state.history = st.session_state.history[:10]
+                    st.markdown(f"""
+                    <div class="result-box">
+                        🎥 <strong>نتيجة البحث:</strong><br>
+                        <a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو مباشرة</a>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.error("❌ لم يتم العثور على فيديو. حاول مرة أخرى.")
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
-
-# عرض الرابط
-if st.session_state.text_link:
-    st.markdown(f"""
-    <div class="result-box">
-        📖 <strong>رابط الدرس النصي:</strong><br>
-        <a href="{st.session_state.text_link}" target="_blank">🔗 اضغط هنا لفتح الدرس (يفتح في نافذة جديدة)</a>
-    </div>
-    """, unsafe_allow_html=True)
-
-if st.session_state.video_link:
-    st.markdown(f"""
-    <div class="result-box">
-        🎥 <strong>رابط الفيديو التعليمي:</strong><br>
-        <a href="{st.session_state.video_link}" target="_blank">🔗 اضغط هنا لفتح الفيديو (يفتح في نافذة جديدة)</a>
-    </div>
-    """, unsafe_allow_html=True)
 
 # آخر درس
 if st.session_state.history:
     st.info(f"📌 آخر درس بحثت عنه: **{st.session_state.history[0]}**")
 
-# الدروس المحفوظة + زر التحميل
+# الدروس المحفوظة
 st.markdown('<div class="saved-lessons"><h3>⭐ دروسي المحفوظة</h3>', unsafe_allow_html=True)
 
 if st.session_state.history:
-    # زر تحميل الدروس
     if st.button("📥 تحميل الدروس المحفوظة (ملف txt)"):
-        file_content = "دروسي المحفوظة - منصة تعليمية ذكية\n"
-        file_content += f"تاريخ التصدير: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-        file_content += "=" * 40 + "\n\n"
+        file_content = "دروسي المحفوظة\n" + "="*30 + "\n"
         for i, item in enumerate(st.session_state.history, 1):
             file_content += f"{i}. {item}\n"
-        st.download_button(
-            label="✅ انقر هنا لتحميل الملف",
-            data=file_content,
-            file_name=f"دروسي_المحفوظة_{datetime.datetime.now().strftime('%Y%m%d')}.txt",
-            mime="text/plain"
-        )
+        st.download_button("✅ انقر لتحميل الملف", file_content, f"دروسي_{datetime.datetime.now().strftime('%Y%m%d')}.txt", "text/plain")
     
-    # عرض الدروس مع زر حذف لكل درس
     for idx, item in enumerate(st.session_state.history):
         col_a, col_b = st.columns([5, 1])
         with col_a:
