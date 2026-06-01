@@ -4,19 +4,18 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="منصة تعليمية", page_icon="📚", layout="wide")
 
-# رابط الخلفية - يمكنك تغييره
+# خلفية علمية
 bg_url = "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format"
 
-# التنسيقات (تم تبسيطها لتجنب الأخطاء)
+# التنسيقات النهائية
 st.markdown(f"""
 <style>
-    /* خط Tajawal */
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
-    html, body, div, p, button, input, .stTextInput, .stButton, .stMarkdown {{
+    
+    * {{
         font-family: 'Tajawal', sans-serif;
     }}
     
-    /* خلفية الصورة */
     .stApp {{
         background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url("{bg_url}");
         background-size: cover;
@@ -24,89 +23,139 @@ st.markdown(f"""
         background-attachment: fixed;
     }}
     
-    /* أزرار */
     .stButton > button {{
-        background: #1E88E5;
+        background: linear-gradient(90deg, #1E88E5, #6A1B9A);
         color: white;
-        border-radius: 30px;
-        padding: 10px;
+        border: none;
+        border-radius: 40px;
+        padding: 12px;
         font-size: 18px;
+        font-weight: bold;
         width: 100%;
+        transition: 0.3s;
     }}
     
-    /* حقل إدخال */
+    .stButton > button:hover {{
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(30,136,229,0.5);
+    }}
+    
     .stTextInput > div > div > input {{
-        background: rgba(255,255,255,0.1);
-        border-radius: 30px;
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 48px;
+        padding: 12px 20px;
         color: white;
-        padding: 10px;
+        font-size: 16px;
+        text-align: right;
     }}
     
-    /* عنوان */
     .main-title {{
         text-align: center;
         font-size: 3rem;
-        color: #FFD166;
+        font-weight: 800;
+        background: linear-gradient(120deg, #FFD166, #06D6A0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 0;
     }}
     
-    /* شعار */
     .slogan {{
         text-align: center;
         font-size: 1.2rem;
-        color: white;
+        color: #ccc;
         margin-bottom: 30px;
     }}
     
-    /* إخفاء التذييل */
-    footer, .viewerBadge_container__r5tak {{
+    /* تنسيق الدروس المحفوظة */
+    .saved-lessons {{
+        background: rgba(0,0,0,0.5);
+        border-radius: 15px;
+        padding: 10px;
+        margin-top: 20px;
+    }}
+    
+    .saved-lessons h3 {{
+        color: #FFD166;
+        text-align: center;
+    }}
+    
+    .lesson-item {{
+        background: rgba(255,255,255,0.1);
+        padding: 8px 12px;
+        margin: 5px 0;
+        border-radius: 10px;
+        color: white;
+        font-size: 14px;
+    }}
+    
+    /* إخفاء كل العناصر السفلية */
+    footer, .viewerBadge_container__r5tak, .st-emotion-cache-1v0mbdj, 
+    .st-emotion-cache-16txtl3, .st-emotion-cache-1y4p8pa, .st-emotion-cache-1r6slb0,
+    [data-testid="stFooter"], [data-testid="stDecoration"] {{
         display: none !important;
     }}
 </style>
 """, unsafe_allow_html=True)
 
+# إخفاء الروابط بجافا سكريبت قوي
+components.html("""
+<script>
+    function removeAllFooters() {
+        var elements = document.querySelectorAll('footer, .viewerBadge_container__r5tak, [data-testid="stFooter"]');
+        elements.forEach(el => el.remove());
+    }
+    setInterval(removeAllFooters, 500);
+    window.addEventListener('load', removeAllFooters);
+</script>
+""", height=0)
+
 # المحتوى
 st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
 st.markdown('<div class="slogan">العلم نور، والإصرار طريق النجاح</div>', unsafe_allow_html=True)
 
-topic = st.text_input("", placeholder="اكتب المادة والدرس... (مثال: فيزياء الكم)")
+topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس... (مثال: فيزياء الكم)", label_visibility="collapsed")
 
 col1, col2 = st.columns(2)
 with col1:
-    if st.button("📖 درس نصي"):
+    if st.button("📖 درس نصي", use_container_width=True):
         if topic:
             url = f"https://www.google.com/search?q={quote(topic + ' شرح')}"
-            components.html(f"<script>window.open('{url}');</script>", height=0)
-            st.success("تم فتح الدرس النصي")
+            components.html(f"<script>window.open('{url}','_blank');</script>", height=0)
+            st.success("✅ تم فتح الدرس النصي")
         else:
-            st.warning("اكتب الدرس أولاً")
+            st.warning("⚠️ اكتب الدرس أولاً")
 
 with col2:
-    if st.button("🎥 فيديو تعليمي"):
+    if st.button("🎥 فيديو تعليمي", use_container_width=True):
         if topic:
             url = f"https://www.youtube.com/results?search_query={quote(topic + ' شرح')}"
-            components.html(f"<script>window.open('{url}');</script>", height=0)
-            st.success("تم فتح الفيديو")
+            components.html(f"<script>window.open('{url}','_blank');</script>", height=0)
+            st.success("✅ تم فتح الفيديو")
         else:
-            st.warning("اكتب الدرس أولاً")
+            st.warning("⚠️ اكتب الدرس أولاً")
 
-# حفظ آخر درس
+# حفظ الدروس
 if topic and ('last_topic' not in st.session_state or st.session_state.last_topic != topic):
     st.session_state.last_topic = topic
     if 'history' not in st.session_state:
         st.session_state.history = []
-    st.session_state.history.insert(0, topic)
-    st.session_state.history = st.session_state.history[:5]
+    if topic not in st.session_state.history:
+        st.session_state.history.insert(0, topic)
+        st.session_state.history = st.session_state.history[:6]
 
 # عرض آخر درس
-if 'last_topic' in st.session_state:
-    st.info(f"📌 آخر درس: {st.session_state.last_topic}")
+if 'last_topic' in st.session_state and st.session_state.last_topic:
+    st.info(f"📌 آخر درس بحثت عنه: **{st.session_state.last_topic}**")
 
-# قائمة الدروس المحفوظة
+# عرض الدروس المحفوظة
 st.markdown("---")
-st.markdown("### 📚 دروسي المحفوظة")
+st.markdown('<div class="saved-lessons"><h3>⭐ دروسي المحفوظة</h3>', unsafe_allow_html=True)
+
 if 'history' in st.session_state and st.session_state.history:
-    for i, item in enumerate(st.session_state.history):
-        st.markdown(f"- {item}")
+    for item in st.session_state.history:
+        st.markdown(f'<div class="lesson-item">📘 {item}</div>', unsafe_allow_html=True)
 else:
-    st.caption("لا توجد دروس محفوظة بعد")
+    st.markdown('<div class="lesson-item">💡 لا توجد دروس محفوظة. ابحث عن درس وسيظهر هنا.</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
