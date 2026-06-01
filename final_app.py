@@ -4,30 +4,30 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="منصة تعليمية ذكية", page_icon="📚", layout="wide")
 
-# خلفية تعبر عن العلم (صورة مكتبة جامعية - يمكنك تغييرها)
+# خلفية علمية (يمكنك تغيير الرابط)
 background_url = "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format"
 
-# إضافة خط Tajawal من Google Fonts
-st.markdown("""
+# إضافة خط Tajawal مع تنسيق آمن (بدون علامة % داخل st.markdown)
+st.markdown(f"""
 <head>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 </head>
 <style>
     /* تطبيق الخط على كل العناصر */
-    html, body, div, p, span, button, input, textarea, .stTextInput, .stButton, .stMarkdown {
+    html, body, div, p, span, button, input, textarea, .stTextInput, .stButton, .stMarkdown {{
         font-family: 'Tajawal', sans-serif !important;
-    }
+    }}
     
     /* خلفية الصورة مع تراكب ناعم */
-    .stApp {
-        background: linear-gradient(rgba(10, 30, 50, 0.75), rgba(5, 15, 25, 0.85)), url("%s");
+    .stApp {{
+        background: linear-gradient(rgba(10, 30, 50, 0.75), rgba(5, 15, 25, 0.85)), url("{background_url}");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-    }
+    }}
     
-    /* بطاقات شفافة بأناقة */
-    .custom-card {
+    /* بقية التنسيقات */
+    .custom-card {{
         background: rgba(255,255,255,0.1);
         backdrop-filter: blur(12px);
         border-radius: 28px;
@@ -35,15 +35,14 @@ st.markdown("""
         margin: 15px 0;
         border: 1px solid rgba(255,255,255,0.2);
         transition: all 0.3s ease;
-    }
-    .custom-card:hover {
+    }}
+    .custom-card:hover {{
         transform: translateY(-3px);
         background: rgba(255,255,255,0.15);
         border-color: #3B82F6;
-    }
+    }}
     
-    /* أزرار أنيقة */
-    .stButton > button {
+    .stButton > button {{
         background: linear-gradient(95deg, #1E88E5, #6A1B9A);
         font-family: 'Tajawal', sans-serif;
         font-weight: 600;
@@ -54,14 +53,13 @@ st.markdown("""
         padding: 10px 20px;
         width: 100%;
         transition: 0.2s;
-    }
-    .stButton > button:hover {
+    }}
+    .stButton > button:hover {{
         transform: scale(1.02);
         box-shadow: 0 6px 14px rgba(30,136,229,0.4);
-    }
+    }}
     
-    /* حقل الإدخال */
-    .stTextInput > div > div > input {
+    .stTextInput > div > div > input {{
         background: rgba(255,255,255,0.15);
         border: 1px solid rgba(255,255,255,0.3);
         border-radius: 48px;
@@ -70,14 +68,13 @@ st.markdown("""
         font-size: 18px;
         font-family: 'Tajawal', sans-serif;
         text-align: right;
-    }
-    .stTextInput > div > div > input:focus {
+    }}
+    .stTextInput > div > div > input:focus {{
         border-color: #1E88E5;
         box-shadow: 0 0 0 2px rgba(30,136,229,0.3);
-    }
+    }}
     
-    /* العنوان الرئيسي */
-    .main-title {
+    .main-title {{
         text-align: center;
         font-size: 3.2rem;
         font-weight: 800;
@@ -86,41 +83,43 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem;
         font-family: 'Tajawal', sans-serif;
-    }
+    }}
     
-    /* شعار تعليمي */
-    .slogan {
+    .slogan {{
         text-align: center;
         font-size: 1.3rem;
         color: rgba(255,255,255,0.9);
         margin-bottom: 2rem;
         font-family: 'Tajawal', sans-serif;
         font-weight: 500;
-    }
+    }}
     
-    /* إخفاء الروابط المزعجة */
-    footer, .viewerBadge_container__r5tak {
+    /* إخفاء جميع العناصر المزعجة في الأسفل */
+    footer, .viewerBadge_container__r5tak, .st-emotion-cache-1v0mbdj, .st-emotion-cache-16txtl3, .st-emotion-cache-1y4p8pa {{
         display: none !important;
-    }
+    }}
     
-    /* تحسين تباين النصوص */
-    .stMarkdown, .stInfo, .stSuccess, .stWarning {
-        font-family: 'Tajawal', sans-serif;
-        font-size: 1rem;
+    /* إخفاء شريط الحالة السفلي بالكامل */
+    .reportview-container .main .st-emotion-cache-1r6slb0 {{
+        display: none;
     }
 </style>
-""" % background_url, unsafe_allow_html=True)
-
-# إخفاء روابط GitHub تلقائياً
-st.markdown("""
-<script>
-    var style = document.createElement('style');
-    style.innerHTML = 'footer {display: none !important;} .viewerBadge_container__r5tak {display: none !important;}';
-    document.head.appendChild(style);
-</script>
 """, unsafe_allow_html=True)
 
-# المحتوى
+# إخفاء footer باستخدام JavaScript قوي
+components.html("""
+<script>
+    // إخفاء العناصر التي تظهر في أسفل الصفحة
+    function removeFooter() {
+        var elements = document.querySelectorAll('footer, .viewerBadge_container__r5tak, .st-emotion-cache-1v0mbdj, .st-emotion-cache-16txtl3');
+        elements.forEach(el => el.style.display = 'none');
+    }
+    setInterval(removeFooter, 100);
+    window.addEventListener('load', removeFooter);
+</script>
+""", height=0)
+
+# المحتوى الرئيسي
 st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
 st.markdown('<div class="slogan">“العلم نور، والإصرار طريق النجاح”</div>', unsafe_allow_html=True)
 
