@@ -1,157 +1,166 @@
 import streamlit as st
-import requests
 from urllib.parse import quote
-import webbrowser
 import streamlit.components.v1 as components
 
-# إعدادات الصفحة
 st.set_page_config(page_title="منصة تعليمية ذكية", page_icon="📚", layout="wide")
 
-# تنسيق CSS احترافي (بدون أي روابط خارجية)
+# خلفية تعبر عن العلم (صورة مكتبة جامعية - يمكنك تغييرها)
+background_url = "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format"
+
+# إضافة خط Tajawal من Google Fonts
 st.markdown("""
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
 <style>
-    /* خلفية عصرية متدرجة */
-    .stApp {
-        background: linear-gradient(145deg, #0B1120 0%, #19233C 100%);
+    /* تطبيق الخط على كل العناصر */
+    html, body, div, p, span, button, input, textarea, .stTextInput, .stButton, .stMarkdown {
+        font-family: 'Tajawal', sans-serif !important;
     }
     
-    /* تنسيق البطاقات */
+    /* خلفية الصورة مع تراكب ناعم */
+    .stApp {
+        background: linear-gradient(rgba(10, 30, 50, 0.75), rgba(5, 15, 25, 0.85)), url("%s");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    
+    /* بطاقات شفافة بأناقة */
     .custom-card {
-        background: rgba(255,255,255,0.05);
+        background: rgba(255,255,255,0.1);
         backdrop-filter: blur(12px);
-        border-radius: 24px;
+        border-radius: 28px;
         padding: 20px;
         margin: 15px 0;
-        border: 1px solid rgba(255,255,255,0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: all 0.3s ease;
     }
     .custom-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(59,130,246,0.5);
-        box-shadow: 0 20px 30px -12px rgba(0,0,0,0.3);
+        transform: translateY(-3px);
+        background: rgba(255,255,255,0.15);
+        border-color: #3B82F6;
     }
     
     /* أزرار أنيقة */
     .stButton > button {
-        background: linear-gradient(90deg, #3B82F6, #2563EB);
+        background: linear-gradient(95deg, #1E88E5, #6A1B9A);
+        font-family: 'Tajawal', sans-serif;
+        font-weight: 600;
+        font-size: 18px;
         color: white;
         border: none;
         border-radius: 40px;
-        padding: 12px 24px;
-        font-weight: 600;
-        font-size: 16px;
-        transition: all 0.2s ease;
+        padding: 10px 20px;
         width: 100%;
+        transition: 0.2s;
     }
     .stButton > button:hover {
         transform: scale(1.02);
-        box-shadow: 0 8px 20px rgba(59,130,246,0.4);
-        background: linear-gradient(90deg, #2563EB, #1D4ED8);
+        box-shadow: 0 6px 14px rgba(30,136,229,0.4);
     }
     
     /* حقل الإدخال */
     .stTextInput > div > div > input {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
         border-radius: 48px;
         padding: 12px 20px;
         color: white;
-        font-size: 16px;
-        transition: all 0.2s;
+        font-size: 18px;
+        font-family: 'Tajawal', sans-serif;
+        text-align: right;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #3B82F6;
-        box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+        border-color: #1E88E5;
+        box-shadow: 0 0 0 2px rgba(30,136,229,0.3);
     }
     
-    /* عنوان رئيسي */
+    /* العنوان الرئيسي */
     .main-title {
         text-align: center;
-        font-size: 2.8rem;
-        font-weight: 700;
-        background: linear-gradient(120deg, #60A5FA, #A78BFA);
+        font-size: 3.2rem;
+        font-weight: 800;
+        background: linear-gradient(120deg, #FFD166, #06D6A0);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
+        font-family: 'Tajawal', sans-serif;
     }
     
-    /* تذييل مخفي */
-    footer {
-        visibility: hidden;
+    /* شعار تعليمي */
+    .slogan {
+        text-align: center;
+        font-size: 1.3rem;
+        color: rgba(255,255,255,0.9);
+        margin-bottom: 2rem;
+        font-family: 'Tajawal', sans-serif;
+        font-weight: 500;
     }
-    .reportview-container .main footer {
+    
+    /* إخفاء الروابط المزعجة */
+    footer, .viewerBadge_container__r5tak {
         display: none !important;
     }
+    
+    /* تحسين تباين النصوص */
+    .stMarkdown, .stInfo, .stSuccess, .stWarning {
+        font-family: 'Tajawal', sans-serif;
+        font-size: 1rem;
+    }
 </style>
-""", unsafe_allow_html=True)
+""" % background_url, unsafe_allow_html=True)
 
-# إخفاء الرابط التلقائي
+# إخفاء روابط GitHub تلقائياً
 st.markdown("""
 <script>
-    // إخفاء عنصر footer الذي يحوي روابط GitHub
     var style = document.createElement('style');
     style.innerHTML = 'footer {display: none !important;} .viewerBadge_container__r5tak {display: none !important;}';
     document.head.appendChild(style);
 </script>
 """, unsafe_allow_html=True)
 
-# العنوان
+# المحتوى
 st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
+st.markdown('<div class="slogan">“العلم نور، والإصرار طريق النجاح”</div>', unsafe_allow_html=True)
 
-# حقل الإدخال
-topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس... (مثال: فيزياء الكم)", label_visibility="collapsed")
+topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس... (مثال: فيزياء الكم، رياضيات متقدمة)", label_visibility="collapsed")
 
-# أزرار
 col1, col2 = st.columns(2)
 with col1:
     text_btn = st.button("📖 درس نصي")
 with col2:
     video_btn = st.button("🎥 فيديو تعليمي")
 
-# دوال البحث والفتح المباشر
 def search_and_open(query, mode):
     if not query.strip():
         st.warning("⚠️ الرجاء كتابة الدرس أولاً")
         return
-    
     with st.spinner(f"🔍 جاري البحث عن {mode} ..."):
         if mode == "نصي":
-            encoded = quote(query + " شرح درس تعليمي")
-            url = f"https://www.google.com/search?q={encoded}"
+            url = f"https://www.google.com/search?q={quote(query + ' شرح درس تعليمي')}"
         else:
-            encoded = quote(query + " شرح تعليمي")
-            url = f"https://www.youtube.com/results?search_query={encoded}"
+            url = f"https://www.youtube.com/results?search_query={quote(query + ' شرح تعليمي')}"
         
-        # حفظ في الجلسة
         if "history" not in st.session_state:
             st.session_state.history = []
         st.session_state.history.insert(0, {"topic": query, "type": mode, "url": url})
         st.session_state.history = st.session_state.history[:8]
         
-        # فتح الرابط تلقائياً عبر JavaScript
-        components.html(f"""
-            <script>
-                window.open("{url}", "_blank");
-            </script>
-        """, height=0)
-        
-        st.success(f"✅ تم فتح {mode} مباشرة بنجاح")
+        components.html(f"<script>window.open('{url}','_blank');</script>", height=0)
+        st.success(f"✅ تم فتح {mode} مباشرة")
 
-# تنفيذ البحث
 if text_btn:
     search_and_open(topic, "نصي")
 if video_btn:
     search_and_open(topic, "فيديو")
 
-# عرض آخر درس
 if "history" in st.session_state and st.session_state.history:
     last = st.session_state.history[0]
     st.info(f"📌 آخر درس: **{last['topic']}** ({last['type']})")
 
-# منطقة الدروس المحفوظة
 st.markdown("---")
 st.markdown("### ⭐ دروسي المحفوظة")
-
 if "history" in st.session_state and st.session_state.history:
     for idx, item in enumerate(st.session_state.history):
         with st.container():
