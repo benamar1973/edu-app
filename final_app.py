@@ -37,75 +37,64 @@ st.markdown(f"""
 st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
 st.markdown('<div class="slogan">العلم نور، والإصرار طريق النجاح</div>', unsafe_allow_html=True)
 
-# ================== زر المشاركة (يعمل 100%) ==================
-# طريقة Streamlit النقية بدون JavaScript معقد
-app_url = "https://share.streamlit.app"  # غيّر هذا إلى رابط تطبيقك الحقيقي بعد النشر
+# ================== رابط التطبيق الحقيقي ==================
+# ضع رابط تطبيقك الحقيقي هنا
+MY_APP_URL = "https://k4jcubpuuhs.streamlit.app"
 
-col_url, col_share = st.columns([4, 1])
-with col_url:
-    st.code(app_url, language="text")
-with col_share:
-    st.link_button("📤 مشاركة التطبيق", app_url, use_container_width=True)
+# ================== زر مشاركة التطبيق (يعمل) ==================
+st.markdown(f"""
+<div style="display: flex; justify-content: center; margin: 20px 0;">
+    <a href="{MY_APP_URL}" target="_blank" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 30px; border-radius: 50px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 10px;">
+        📤 مشاركة التطبيق
+    </a>
+</div>
+""", unsafe_allow_html=True)
 
 st.divider()
 
-# ================== حقل البحث + زر مسح (يعمل الآن) ==================
-if "search_topic" not in st.session_state:
-    st.session_state.search_topic = ""
+# ================== حقل البحث + زر مسح (الطريقة الصحيحة) ==================
+# استخدام form لحل مشكلة المسح
+with st.form(key="search_form"):
+    topic = st.text_input("🔍 اكتب المادة والدرس", placeholder="مثال: الرياضيات - المعادلات")
+    
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        submitted_text = st.form_submit_button("📖 درس نصي", use_container_width=True)
+    with col2:
+        submitted_video = st.form_submit_button("🎥 فيديو تعليمي", use_container_width=True)
+    with col3:
+        clear = st.form_submit_button("🗑️ مسح", use_container_width=True)
 
-# العمود الأول: حقل النص
-topic = st.text_input(
-    "🔍 اكتب المادة والدرس",
-    value=st.session_state.search_topic,
-    placeholder="مثال: الرياضيات - المعادلات",
-    key="topic_input"
-)
+# معالجة المسح
+if clear:
+    topic = ""
+    st.rerun()
 
-# تحديث session_state عند الكتابة
-st.session_state.search_topic = topic
+# معالجة البحث
+if submitted_text and topic:
+    link = f"https://www.google.com/search?q={quote(topic + ' شرح')}"
+    st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح نتائج البحث</a></div>', unsafe_allow_html=True)
+elif submitted_text and not topic:
+    st.warning("⚠️ اكتب الدرس أولاً")
 
-# زر المسح أسفل الحقل مباشرة
-col_clear, _ = st.columns([1, 5])
-with col_clear:
-    if st.button("🗑️ مسح النص", use_container_width=True):
-        st.session_state.search_topic = ""
-        st.rerun()
-
-# ================== دوال البحث ==================
-def get_youtube_link(query):
-    try:
-        key = st.secrets.get("YOUTUBE_API_KEY")
-        if not key:
-            return f"https://www.youtube.com/results?search_query={quote(query + ' شرح')}"
-        url = "https://www.googleapis.com/youtube/v3/search"
-        params = {"part": "snippet", "q": query + " شرح", "type": "video", "maxResults": 1, "key": key}
-        r = requests.get(url, params=params)
-        data = r.json()
-        if "items" in data and len(data["items"]) > 0:
-            video_id = data['items'][0]['id']['videoId']
-            return f"https://www.youtube.com/watch?v={video_id}"
-    except:
-        pass
-    return f"https://www.youtube.com/results?search_query={quote(query + ' شرح')}"
-
-def get_google_link(query):
-    return f"https://www.google.com/search?q={quote(query + ' شرح')}"
-
-# ================== أزرار البحث ==================
-btn1, btn2 = st.columns(2)
-with btn1:
-    if st.button("📖 درس نصي", use_container_width=True):
-        if topic:
-            link = get_google_link(topic)
-            st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح نتائج البحث</a></div>', unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ اكتب الدرس أولاً")
-
-with btn2:
-    if st.button("🎥 فيديو تعليمي", use_container_width=True):
-        if topic:
-            with st.spinner("جاري البحث عن أفضل فيديو..."):
-                link = get_youtube_link(topic)
-            st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو المباشر</a></div>', unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ اكتب الدرس أولاً")
+if submitted_video and topic:
+    with st.spinner("جاري البحث عن أفضل فيديو..."):
+        try:
+            key = st.secrets.get("YOUTUBE_API_KEY")
+            if key:
+                url = "https://www.googleapis.com/youtube/v3/search"
+                params = {"part": "snippet", "q": topic + " شرح", "type": "video", "maxResults": 1, "key": key}
+                r = requests.get(url, params=params)
+                data = r.json()
+                if "items" in data and len(data["items"]) > 0:
+                    video_id = data['items'][0]['id']['videoId']
+                    link = f"https://www.youtube.com/watch?v={video_id}"
+                else:
+                    link = f"https://www.youtube.com/results?search_query={quote(topic + ' شرح')}"
+            else:
+                link = f"https://www.youtube.com/results?search_query={quote(topic + ' شرح')}"
+        except:
+            link = f"https://www.youtube.com/results?search_query={quote(topic + ' شرح')}"
+    st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو المباشر</a></div>', unsafe_allow_html=True)
+elif submitted_video and not topic:
+    st.warning("⚠️ اكتب الدرس أولاً")
