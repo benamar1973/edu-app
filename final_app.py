@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 from urllib.parse import quote
-import datetime
 
 # ================== إعدادات الصفحة ==================
 st.set_page_config(page_title="منصة تعليمية ذكية", page_icon="📚", layout="wide")
@@ -24,7 +23,7 @@ st.markdown(f"""
     .result-box a {{ color: #FFD166; font-size: 18px; text-decoration: none; }}
     .saved-lessons {{ background: rgba(0,0,0,0.5); border-radius: 15px; padding: 15px; margin-top: 30px; }}
     .saved-lessons h3 {{ color: #FFD166; text-align: center; }}
-    .lesson-item {{ background: rgba(255,255,255,0.1); padding: 8px 12px; margin: 5px 0; border-radius: 10px; color: white; }}
+    .lesson-item {{ background: rgba(255,255,255,0.1); padding: 8px 12px; margin: 5px 0; border-radius: 10px; color: white; text-align: right; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,21 +47,25 @@ with col2:
 if 'history' not in st.session_state:
     st.session_state.history = []
 
-# دالة البحث عن فيديو
+# دالة البحث عن فيديو باستخدام الـ API المحدث
 def get_youtube_link(query):
     try:
         key = st.secrets.get("YOUTUBE_API_KEY")
         if not key:
+            st.error("⚠️ لم يتم العثور على مفتاح الـ API في الإعدادات!")
             return None
+            
         url = "https://www.googleapis.com/youtube/v3/search"
         params = {"part": "snippet", "q": query + " شرح", "type": "video", "maxResults": 1, "key": key}
         r = requests.get(url, params=params)
         data = r.json()
-        if data.get("items"):
-            return f"https://www.youtube.com/watch?v={data['items'][0]['id']['videoId']}"
-    except:
-        pass
-    return f"https://www.youtube.com/results?search_query={quote(query + ' شرح')}"
+        
+        if "items" in data and len(data["items"]) > 0:
+            video_id = data['items'][0]['id']['videoId']
+            return f"https://www.youtube.com/watch?v={video_id}"
+    except Exception as e:
+        st.error(f"حدث خطأ في الاتصال: {e}")
+    return None
 
 # دالة البحث النصي
 def get_google_link(query):
@@ -83,27 +86,31 @@ with btn1:
 with btn2:
     if st.button("🎥 فيديو تعليمي", use_container_width=True):
         if topic:
-            link = get_youtube_link(topic)
-            if topic not in st.session_state.history:
-                st.session_state.history.insert(0, topic)
-            st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو</a></div>', unsafe_allow_html=True)
+            with st.spinner("جاري البحث عن أفضل فيديو..."):
+                link = get_youtube_link(topic)
+            if link:
+                if topic not in st.session_state.history:
+                    st.session_state.history.insert(0, topic)
+                st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو المباشر</a></div>', unsafe_allow_html=True)
+            else:
+                st.error("❌ عذراً، لم نتمكن من جلب فيديو لهذا الدرس حالياً.")
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
 
 # آخر درس
 if st.session_state.history:
-    st.info(f"📌 آخر درس: **{st.session_state.history[0]}**")
+    st.info(f"📌 آخر درس بحثت عنه: **{st.session_state.history[0]}**")
 
-# الدروس المحفوظة
-st.markdown('<div class="saved-lessons"><h3>⭐ دروسي المحفوظة</h3>', unsafe_allow_html=True)
+# الدروس المحفوظة (تصحيح الوسوم والمظهر)
+st.markdown('<div class="saved-lessons"><h3>⭐ دروسي المحفوظة</h3></div>', unsafe_allow_html=True)
 if st.session_state.history:
     for i, item in enumerate(st.session_state.history):
         c1, c2 = st.columns([5, 1])
         with c1:
-            st.markdown(f'📘 {item}')
+            st.markdown(f'<div class="lesson-item">📘 {item}</div>', unsafe_allow_html=True)
         with c2:
             if st.button("🗑️", key=f"del_{i}"):
                 st.session_state.history.pop(i)
                 st.rerun()
 else:
-    st.markdown('<div class="lesson-item">💡 لا توجد دروس محفوظة</div>', unsafe_allow_html=True)
+    st.markdown('<div class="lesson-item" style="text-align:center;">💡 لا توجد دروس محفوظة حالياً</div>', unsafe_allow_html=True)
