@@ -34,9 +34,20 @@ st.markdown(f"""
     .slogan {{ text-align: center; font-size: 1.2rem; color: #ddd; margin-bottom: 30px; }}
     .result-box {{ background: rgba(0,0,0,0.75); border-radius: 15px; padding: 15px; margin: 15px 0; text-align: center; }}
     .result-box a {{ color: #FFD166; font-size: 18px; text-decoration: none; }}
-    .saved-lessons {{ background: rgba(0,0,0,0.5); border-radius: 15px; padding: 15px; margin-top: 30px; }}
-    .saved-lessons h3 {{ color: #FFD166; text-align: center; }}
-    .lesson-item {{ background: rgba(255,255,255,0.1); padding: 8px 12px; margin: 5px 0; border-radius: 10px; color: white; text-align: right; }}
+    
+    /* زر المشاركة */
+    .share-btn {{
+        background: linear-gradient(90deg, #FF8C00, #FFD700);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 40px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        border: none;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -44,34 +55,52 @@ st.markdown(f"""
 st.markdown('<div class="main-title">📚 منصة تعليمية ذكية</div>', unsafe_allow_html=True)
 st.markdown('<div class="slogan">العلم نور، والإصرار طريق النجاح</div>', unsafe_allow_html=True)
 
-# حقل الإدخال مع زر مسح
+# ================== حقل البحث + زر المسح ==================
 if "search_topic" not in st.session_state:
     st.session_state.search_topic = ""
 
 col1, col2 = st.columns([5, 1])
 with col1:
     topic = st.text_input("", placeholder="✏️ اكتب المادة والدرس...", label_visibility="collapsed", key="input", value=st.session_state.search_topic)
-    st.session_state.search_topic = topic
 with col2:
     if st.button("🗑️ مسح", use_container_width=True):
         st.session_state.search_topic = ""
         st.rerun()
 
-if 'history' not in st.session_state:
-    st.session_state.history = []
+st.session_state.search_topic = topic
 
-# دالة البحث عن فيديو باستخدام الـ API المحدث والرابط الصحيح
+# ================== أيقونة المشاركة ==================
+col_share, col_empty = st.columns([1, 5])
+with col_share:
+    share_js = f"""
+    <script>
+    function shareApp() {{
+        if (navigator.share) {{
+            navigator.share({{
+                title: 'منصة تعليمية ذكية',
+                text: 'منصة لتعلم الدروس بسهولة - فيديوهات ونصوص تعليمية',
+                url: window.location.href
+            }}).catch(console.log);
+        }} else {{
+            navigator.clipboard.writeText(window.location.href);
+            alert('تم نسخ رابط التطبيق!');
+        }}
+    }}
+    </script>
+    <button class="share-btn" onclick="shareApp()">🔗 شارك التطبيق</button>
+    """
+    st.components.v1.html(share_js, height=60)
+
+# ================== دوال البحث ==================
 def get_youtube_link(query):
     try:
         key = st.secrets.get("YOUTUBE_API_KEY")
         if not key:
             return f"https://www.youtube.com/results?search_query={quote(query + ' شرح')}"
-            
         url = "https://www.googleapis.com/youtube/v3/search"
         params = {"part": "snippet", "q": query + " شرح", "type": "video", "maxResults": 1, "key": key}
         r = requests.get(url, params=params)
         data = r.json()
-        
         if "items" in data and len(data["items"]) > 0:
             video_id = data['items'][0]['id']['videoId']
             return f"https://www.youtube.com/watch?v={video_id}"
@@ -79,18 +108,15 @@ def get_youtube_link(query):
         pass
     return f"https://www.youtube.com/results?search_query={quote(query + ' شرح')}"
 
-# دالة البحث النصي
 def get_google_link(query):
     return f"https://www.google.com/search?q={quote(query + ' شرح')}"
 
-# أزرار البحث
+# ================== أزرار البحث ==================
 btn1, btn2 = st.columns(2)
 with btn1:
-    if st.button("📖 lesson text ", use_container_width=True):
+    if st.button("📖 درس نصي", use_container_width=True):
         if topic:
             link = get_google_link(topic)
-            if topic not in st.session_state.history:
-                st.session_state.history.insert(0, topic)
             st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح نتائج البحث</a></div>', unsafe_allow_html=True)
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
@@ -100,26 +126,6 @@ with btn2:
         if topic:
             with st.spinner("جاري البحث عن أفضل فيديو..."):
                 link = get_youtube_link(topic)
-            if topic not in st.session_state.history:
-                st.session_state.history.insert(0, topic)
             st.markdown(f'<div class="result-box"><a href="{link}" target="_blank">🔗 اضغط لفتح الفيديو المباشر</a></div>', unsafe_allow_html=True)
         else:
             st.warning("⚠️ اكتب الدرس أولاً")
-
-# آخر درس
-if st.session_state.history:
-    st.info(f"📌 آخر درس بحثت عنه: **{st.session_state.history[0]}**")
-
-# الدروس المحفوظة
-st.markdown('<div class="saved-lessons"><h3>⭐ دروسي المحفوظة</h3></div>', unsafe_allow_html=True)
-if st.session_state.history:
-    for i, item in enumerate(st.session_state.history):
-        c1, c2 = st.columns([5, 1])
-        with c1:
-            st.markdown(f'<div class="lesson-item">📘 {item}</div>', unsafe_allow_html=True)
-        with c2:
-            if st.button("🗑️", key=f"del_{i}"):
-                st.session_state.history.pop(i)
-                st.rerun()
-else:
-    st.markdown('<div class="lesson-item" style="text-align:center;">💡 لا توجد دروس محفوظة حالياً</div>', unsafe_allow_html=True)
